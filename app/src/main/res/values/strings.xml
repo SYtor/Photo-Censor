@@ -1,0 +1,17 @@
+<resources>
+    <string name="app_name">Photo Censor</string>
+
+    <string name="select_image">Select image</string>
+    <string name="select_color">Select color</string>
+    <string name="apply_changes">Apply changes</string>
+    <string name="select_shape">Select shape</string>
+
+
+    <string name="turn_left">Turn left</string>
+    <string name="turn_right">Turn right</string>
+    <string name="clear_selection">Clear selection</string>
+    <string name="export_image">Export Image</string>
+
+    <string name="squares_size">Square\'s size</string>
+
+</resources>

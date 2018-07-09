@@ -51,6 +51,8 @@ public class TabFragment extends Fragment {
 
         }
 
+        viewGroup.addView(inflater.inflate(R.layout.tab_switcher,viewGroup,false));
+
         return viewGroup;
     }
 

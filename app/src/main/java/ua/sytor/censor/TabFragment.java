@@ -32,6 +32,7 @@ public class TabFragment extends Fragment {
 
         int[] iconIds = bundle.getIntArray("icons");
         int[] buttonIds = bundle.getIntArray("buttons");
+        int buttonResourceId = bundle.getInt("buttonResourceDrawable", R.drawable.arrow_left);
 
         for (int i = 0; i < titles.length; i++){
 
@@ -51,7 +52,13 @@ public class TabFragment extends Fragment {
 
         }
 
-        viewGroup.addView(inflater.inflate(R.layout.tab_switcher,viewGroup,false));
+        View switchPageView = inflater.inflate(R.layout.tab_switcher,viewGroup,false);
+        ImageButton pageSwitchButton = switchPageView.findViewById(R.id.switch_tab);
+        pageSwitchButton.setOnClickListener((MainActivity)getActivity());
+
+       pageSwitchButton.setImageDrawable(ContextCompat.getDrawable(getContext(), buttonResourceId));
+
+        viewGroup.addView(switchPageView);
 
         return viewGroup;
     }

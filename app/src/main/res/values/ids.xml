@@ -9,4 +9,7 @@
     <item type="id" name="turn_right"/>
     <item type="id" name="select_color"/>
     <item type="id" name="clear_selection"/>
+
+    <item type="id" name="censor_type"/>
+    <item type="id" name="selection_settings"/>
 </resources>

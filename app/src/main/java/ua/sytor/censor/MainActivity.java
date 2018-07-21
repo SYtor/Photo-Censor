@@ -1,7 +1,6 @@
 package ua.sytor.censor;
 
 import android.content.Intent;
-import android.graphics.Color;
 import android.graphics.PorterDuff;
 import android.graphics.drawable.Drawable;
 import android.graphics.drawable.LayerDrawable;
@@ -11,20 +10,20 @@ import android.support.v4.view.GestureDetectorCompat;
 import android.support.v4.view.ViewPager;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
-import android.util.Log;
 import android.view.GestureDetector;
 import android.view.MotionEvent;
 import android.view.View;
-import android.view.WindowManager;
 import android.widget.ImageButton;
 import android.widget.ImageView;
-import android.widget.RelativeLayout;
 
 import java.io.IOException;
 
 public class MainActivity extends AppCompatActivity implements View.OnClickListener {
 
     public static final int PICK_IMAGE = 1;
+
+    private View.OnTouchListener shapeSelectorTouchHandler;
+    private View.OnTouchListener hidePagerButtonTouchHandler;
 
     private ImageView imageView;
     private ShapeView shapeView;
@@ -33,7 +32,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
 
     private BitmapProcessor bitmapProcessor;
 
-    private ImageButton imageButton;
+    private ImageButton pagerHideButton;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -42,24 +41,20 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
 
         imageView = (ImageView) findViewById(R.id.image_view);
         shapeView = (ShapeView) findViewById(R.id.shape_view);
-        imageButton = (ImageButton) findViewById(R.id.image_button);
-
-        viewPager = (ViewPager) findViewById(R.id.view_pager);
-        viewPager.setAdapter(new PagerAdapter(getSupportFragmentManager()));
-
-        shapeView.setOnTouchListener(new ImageTouchListener(imageView, shapeView));
+        pagerHideButton = (ImageButton) findViewById(R.id.image_button);
 
         bitmapProcessor = new BitmapProcessor(this, imageView, shapeView);
 
+        viewPager = (ViewPager) findViewById(R.id.view_pager);
+        PagerAdapter adapter = new PagerAdapter(getSupportFragmentManager());
+        viewPager.setAdapter(adapter);
 
-        Drawable circle = ContextCompat.getDrawable(this, R.drawable.circle);
-        circle.setColorFilter(ContextCompat.getColor(this,R.color.colorPrimary), PorterDuff.Mode.SRC_ATOP);
-        Drawable downArrow = ContextCompat.getDrawable(this, R.drawable.ic_keyboard_arrow_down_black_24dp);
-        LayerDrawable layerDrawable = new LayerDrawable(new Drawable[]{circle,downArrow});
+        shapeSelectorTouchHandler = new ImageTouchListener(imageView, shapeView);
+        hidePagerButtonTouchHandler = new ImageButtonTouch();
 
-        imageButton.setImageDrawable(layerDrawable);
-        imageButton.setOnTouchListener(new ImageButtonTouch());
-
+        shapeView.setOnTouchListener(shapeSelectorTouchHandler);
+        pagerHideButton.setOnTouchListener(hidePagerButtonTouchHandler);
+        updateHideButtonDrawable(true);
 
     }
 
@@ -98,16 +93,62 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
             case R.id.turn_right:
                 bitmapProcessor.rotate(90);
                 break;
+            case R.id.switch_tab:
+                viewPager.setCurrentItem((viewPager.getCurrentItem() + 1) % 2);
+                break;
+            case R.id.censor_type:
+                displayCensorTypeDialog();
+                break;
+            case R.id.selection_settings:
+                selectionSettingsDialog();
+                break;
         }
+
+    }
+
+    private void updateHideButtonDrawable(boolean isVisible){
+        Drawable circle = ContextCompat.getDrawable(this, R.drawable.circle);
+        circle.setColorFilter(ContextCompat.getColor(this,R.color.colorPrimary), PorterDuff.Mode.SRC_ATOP);
+        Drawable arrowDrawable = isVisible ?
+                ContextCompat.getDrawable(this, R.drawable.ic_arrow_down) :
+                ContextCompat.getDrawable(this, R.drawable.ic_arrow_up);
+        LayerDrawable layerDrawable = new LayerDrawable(new Drawable[]{circle,arrowDrawable});
+
+        pagerHideButton.setImageDrawable(layerDrawable);
+    }
+
+    private void setPagerVisibility(boolean isVisible){
+
+        updateHideButtonDrawable(isVisible);
+
+        if (isVisible){
+            viewPager.animate().translationY(0);
+            findViewById(R.id.constraint).animate().translationY(0);
+        }else{
+            viewPager.animate().translationY(viewPager.getHeight());
+            findViewById(R.id.constraint).animate().translationY(viewPager.getHeight());
+        }
+    }
+
+    private void displayCensorTypeDialog(){
+
+        CensorTypeDialog dialog = new CensorTypeDialog(this);
+
+    }
+
+    private void selectionSettingsDialog(){
 
     }
 
     private class ImageButtonTouch implements View.OnTouchListener{
 
-        private boolean isHide;
+        private boolean visibility;
 
         private GestureDetectorCompat gestureDetector;
         private ConstraintLayout.LayoutParams layoutParams;
+
+        private boolean toListen;
+        private float pressedCoordinate;
 
         ImageButtonTouch(){
             gestureDetector = new GestureDetectorCompat(MainActivity.this, new GestureDetector.SimpleOnGestureListener(){
@@ -116,33 +157,34 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
                     return true;
                 }
             });
-            layoutParams = (ConstraintLayout.LayoutParams) imageButton.getLayoutParams();
-            isHide = false;
+            layoutParams = (ConstraintLayout.LayoutParams) pagerHideButton.getLayoutParams();
+            visibility = true;
         }
 
         @Override
         public boolean onTouch(View view, MotionEvent motionEvent) {
 
             if (gestureDetector.onTouchEvent(motionEvent)){
-                if (isHide){
-                    viewPager.animate().translationY(0);
-                    findViewById(R.id.constraint).animate().translationY(0);
-                }else{
-                    viewPager.animate().translationY(viewPager.getHeight());
-                    findViewById(R.id.constraint).animate().translationY(viewPager.getHeight());
-                }
-                isHide = !isHide;
+                setPagerVisibility(visibility);
+                visibility = !visibility;
                 return true;
             }
 
             switch (motionEvent.getAction()) {
                 case MotionEvent.ACTION_DOWN:
+                    pressedCoordinate = motionEvent.getRawX();
+                    toListen = true;
                     return true;
                 case MotionEvent.ACTION_UP:
                     return true;
                 case MotionEvent.ACTION_MOVE:
-                    layoutParams.horizontalBias = motionEvent.getRawX() / shapeView.getWidth();
-                    imageButton.setLayoutParams(layoutParams);
+                    if (!toListen) return true;
+                    if (Math.abs(motionEvent.getRawX() - pressedCoordinate) > shapeView.getWidth() / 4){
+                        layoutParams.horizontalBias = layoutParams.horizontalBias == 1 ? 0 : 1;
+                        pagerHideButton.setLayoutParams(layoutParams);
+                        toListen = false;
+                    }
+
                     return true;
             }
 

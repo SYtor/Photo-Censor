@@ -12,6 +12,22 @@
     <string name="clear_selection">Clear selection</string>
     <string name="export_image">Export Image</string>
 
+    <string name="selection_setting">Selector edit</string>
+    <string name="censor_type">Censor type</string>
+
     <string name="squares_size">Square\'s size</string>
+
+    <string name="apply">Apply</string>
+    <string name="cancel">Cancel</string>
+
+    <string-array name="censor_types">
+        <item>Squares</item>
+        <item>Blur</item>
+        <item>Color fill</item>
+    </string-array>
+
+    <string name="square_size">Square size</string>
+    <string name="blur_">Blur </string>
+    <string name="color">Color</string>
 
 </resources>

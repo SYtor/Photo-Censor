@@ -1,4 +1,4 @@
-package ua.sytor.censor;
+package ua.sytor.censor.ui.tabs;
 
 import android.graphics.drawable.Drawable;
 import android.graphics.drawable.LayerDrawable;
@@ -12,6 +12,9 @@ import android.view.ViewGroup;
 import android.widget.ImageButton;
 import android.widget.LinearLayout;
 import android.widget.TextView;
+
+import ua.sytor.censor.MainActivity;
+import ua.sytor.censor.R;
 
 public class TabFragment extends Fragment {
 

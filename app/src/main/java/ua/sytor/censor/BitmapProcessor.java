@@ -1,33 +1,24 @@
 package ua.sytor.censor;
 
-
-import android.app.Activity;
 import android.content.Context;
-import android.content.res.Resources;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
-import android.graphics.BitmapRegionDecoder;
-import android.graphics.Canvas;
-import android.graphics.Color;
 import android.graphics.Matrix;
-import android.graphics.Paint;
 import android.graphics.PointF;
 import android.graphics.Rect;
 import android.net.Uri;
 import android.util.Log;
 import android.widget.ImageView;
-
-import java.io.File;
-import java.io.FileInputStream;
 import java.io.FileNotFoundException;
-import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.ArrayList;
 import java.util.List;
 
+import ua.sytor.censor.effects.Effect;
 import ua.sytor.censor.sromku.Point;
 import ua.sytor.censor.sromku.Polygon;
+import ua.sytor.censor.ui.ShapeView;
 
 public class BitmapProcessor {
 
@@ -42,6 +33,8 @@ public class BitmapProcessor {
     private int squareSize;
 
     private Bitmap bitmap;
+
+    private Effect effect;
 
     public BitmapProcessor(Context context, ImageView imageView, ShapeView shapeView){
         this.context = context;
@@ -86,7 +79,6 @@ public class BitmapProcessor {
     }
 
 
-
     public void applySelection() {
 
         //Read input file
@@ -120,41 +112,7 @@ public class BitmapProcessor {
 
         //Drawing objects
 
-        Paint paint = new Paint();
-        paint.setStyle(Paint.Style.FILL);
-        Point tmpPoint = new Point(0,0);
-        Canvas canvas = new Canvas(bitmap);
-
-        int squareHalf = squareSize / 2;
-
-        for (int x = squareHalf; x < width; x += squareHalf){
-            for (int y = squareHalf; y < height; y += squareHalf){
-
-                tmpPoint.y = y;
-                tmpPoint.x = x;
-
-                if (polygon.contains(tmpPoint)){
-
-                    //Get color
-                    float redValue = 0;
-                    float blueValue = 0;
-                    float greenValue = 0;
-                    for (int px = x - squareHalf; px < Math.min(width, x + squareHalf); px++){
-                        for (int py = y - squareHalf; py < Math.min(height, y + squareHalf) ; py++){
-                            int pixel = bitmap.getPixel(px,py);
-                            redValue += (float) Color.red(pixel) / (squareSize * squareSize);
-                            blueValue += (float) Color.blue(pixel) / (squareSize * squareSize);
-                            greenValue += (float) Color.green(pixel) / (squareSize * squareSize);
-                        }
-                    }
-                    paint.setColor(Color.rgb((int)redValue,(int)greenValue,(int)blueValue));
-
-                    //Paint color square
-                    canvas.drawRect(x - squareHalf, y + squareHalf, x + squareHalf, y - squareHalf, paint);
-
-                }
-            }
-        }
+        effect.apply(bitmap, polygon);
 
         imageView.setImageBitmap(bitmap);
 
@@ -191,5 +149,7 @@ public class BitmapProcessor {
 
     }
 
-
+    public void setEffect(Effect effect) {
+        this.effect = effect;
+    }
 }

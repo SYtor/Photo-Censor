@@ -1,9 +1,11 @@
-package ua.sytor.censor;
+package ua.sytor.censor.ui.tabs;
 
 import android.os.Bundle;
 import android.support.v4.app.Fragment;
 import android.support.v4.app.FragmentManager;
 import android.support.v4.app.FragmentStatePagerAdapter;
+
+import ua.sytor.censor.R;
 
 public class PagerAdapter extends FragmentStatePagerAdapter{
 

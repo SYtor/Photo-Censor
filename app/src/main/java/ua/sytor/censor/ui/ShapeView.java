@@ -1,4 +1,4 @@
-package ua.sytor.censor;
+package ua.sytor.censor.ui;
 
 import android.content.Context;
 import android.graphics.Canvas;

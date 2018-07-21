@@ -8,6 +8,8 @@ import android.view.MotionEvent;
 import android.view.View;
 import android.widget.ImageView;
 
+import ua.sytor.censor.ui.ShapeView;
+
 public class ImageTouchListener implements View.OnTouchListener{
 
     private GestureDetectorCompat gestureDetectorCompat;

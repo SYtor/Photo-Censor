@@ -18,6 +18,11 @@ import android.widget.ImageView;
 
 import java.io.IOException;
 
+import ua.sytor.censor.effects.SquareEffect;
+import ua.sytor.censor.ui.CensorTypeDialog;
+import ua.sytor.censor.ui.ShapeView;
+import ua.sytor.censor.ui.tabs.PagerAdapter;
+
 public class MainActivity extends AppCompatActivity implements View.OnClickListener {
 
     public static final int PICK_IMAGE = 1;
@@ -44,6 +49,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
         pagerHideButton = (ImageButton) findViewById(R.id.image_button);
 
         bitmapProcessor = new BitmapProcessor(this, imageView, shapeView);
+        bitmapProcessor.setEffect(new SquareEffect());
 
         viewPager = (ViewPager) findViewById(R.id.view_pager);
         PagerAdapter adapter = new PagerAdapter(getSupportFragmentManager());

@@ -24,7 +24,7 @@ public class PagerAdapter extends FragmentStatePagerAdapter{
 
         Bundle b2 = new Bundle();
         b2.putIntArray("titles", new int[]{R.string.turn_left, R.string.turn_right, R.string.censor_type, R.string.selection_setting});
-        b2.putIntArray("icons", new int[]{R.drawable.ic_rotate_left,R.drawable.ic_rotate_right,R.drawable.circle,R.drawable.ic_crop});
+        b2.putIntArray("icons", new int[]{R.drawable.ic_rotate_left,R.drawable.ic_rotate_right,R.drawable.ic_photo_filter,R.drawable.ic_crop});
         b2.putIntArray("buttons", new int[]{R.id.turn_left, R.id.turn_right, R.id.censor_type, R.id.selection_settings});
         b2.putInt("buttonResourceDrawable", R.drawable.arrow_left);
         tabFragment2 = new TabFragment();

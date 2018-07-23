@@ -1,4 +1,4 @@
-package ua.sytor.censor.sromku;
+package ua.sytor.censor.math;
 
 public class Point {
 

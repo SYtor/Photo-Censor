@@ -16,8 +16,8 @@ import java.util.ArrayList;
 import java.util.List;
 
 import ua.sytor.censor.effects.Effect;
-import ua.sytor.censor.sromku.Point;
-import ua.sytor.censor.sromku.Polygon;
+import ua.sytor.censor.math.Point;
+import ua.sytor.censor.math.Polygon;
 import ua.sytor.censor.ui.ShapeView;
 
 public class BitmapProcessor {
@@ -112,7 +112,7 @@ public class BitmapProcessor {
 
         //Drawing objects
 
-        effect.apply(bitmap, polygon);
+        effect.apply(context, bitmap, polygon);
 
         imageView.setImageBitmap(bitmap);
 
@@ -151,5 +151,9 @@ public class BitmapProcessor {
 
     public void setEffect(Effect effect) {
         this.effect = effect;
+    }
+
+    public boolean isBitmapLoaded(){
+        return bitmap != null;
     }
 }

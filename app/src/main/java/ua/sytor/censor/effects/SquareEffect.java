@@ -1,17 +1,22 @@
 package ua.sytor.censor.effects;
 
+import android.content.Context;
 import android.graphics.Bitmap;
 import android.graphics.Canvas;
 import android.graphics.Color;
 import android.graphics.Paint;
 
-import ua.sytor.censor.sromku.Point;
-import ua.sytor.censor.sromku.Polygon;
+import ua.sytor.censor.math.Point;
+import ua.sytor.censor.math.Polygon;
 
 public class SquareEffect implements Effect {
 
+
+
     @Override
-    public void apply(Bitmap bitmap, Polygon polygon) {
+    public void apply(Context context, Bitmap bitmap, Polygon polygon) {
+
+        int scale = context.getSharedPreferences("settings",Context.MODE_PRIVATE).getInt("",3);
 
         Paint paint = new Paint();
         paint.setStyle(Paint.Style.FILL);

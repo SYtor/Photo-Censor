@@ -90,6 +90,7 @@ public class ShapeView extends View {
 
     public boolean isFirstPointSelected(float x, float y){
 
+        if (pointList.isEmpty()) return false;
         PointF point = pointList.get(0);
         return distance(x, y, point.x, point.y) < selectMaxDistance && pointList.size() > 1;
 
@@ -98,6 +99,7 @@ public class ShapeView extends View {
     public void resetShape(){
         pointList.clear();
         isClosed = false;
+        invalidate();
     }
 
     public void setClosed(boolean closed) {
@@ -114,5 +116,9 @@ public class ShapeView extends View {
 
     public Paint getPaint() {
         return paint;
+    }
+
+    public void setColor(int color){
+        paint.setColor(color);
     }
 }

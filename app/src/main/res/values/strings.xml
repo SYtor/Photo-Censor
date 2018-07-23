@@ -30,4 +30,9 @@
     <string name="blur_">Blur </string>
     <string name="color">Color</string>
 
+    <string-array name="selector_types">
+        <item>Polygon</item>
+        <item>Rectangle</item>
+    </string-array>
+
 </resources>

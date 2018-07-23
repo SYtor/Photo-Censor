@@ -1,6 +1,8 @@
 package ua.sytor.censor;
 
 import android.content.Intent;
+import android.content.SharedPreferences;
+import android.graphics.Color;
 import android.graphics.PorterDuff;
 import android.graphics.drawable.Drawable;
 import android.graphics.drawable.LayerDrawable;
@@ -18,17 +20,19 @@ import android.widget.ImageView;
 
 import java.io.IOException;
 
+import ua.sytor.censor.effects.BlurEffect;
+import ua.sytor.censor.effects.ColorEffect;
 import ua.sytor.censor.effects.SquareEffect;
-import ua.sytor.censor.ui.CensorTypeDialog;
+import ua.sytor.censor.selectors.PolygonTouchListener;
+import ua.sytor.censor.selectors.RectangleTouchListener;
+import ua.sytor.censor.ui.dialogs.CensorTypeDialog;
 import ua.sytor.censor.ui.ShapeView;
+import ua.sytor.censor.ui.dialogs.SelectorEditDialog;
 import ua.sytor.censor.ui.tabs.PagerAdapter;
 
 public class MainActivity extends AppCompatActivity implements View.OnClickListener {
 
     public static final int PICK_IMAGE = 1;
-
-    private View.OnTouchListener shapeSelectorTouchHandler;
-    private View.OnTouchListener hidePagerButtonTouchHandler;
 
     private ImageView imageView;
     private ShapeView shapeView;
@@ -44,22 +48,36 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
 
-        imageView = (ImageView) findViewById(R.id.image_view);
-        shapeView = (ShapeView) findViewById(R.id.shape_view);
-        pagerHideButton = (ImageButton) findViewById(R.id.image_button);
+        imageView = findViewById(R.id.image_view);
+        shapeView = findViewById(R.id.shape_view);
+        pagerHideButton = findViewById(R.id.image_button);
 
         bitmapProcessor = new BitmapProcessor(this, imageView, shapeView);
-        bitmapProcessor.setEffect(new SquareEffect());
 
-        viewPager = (ViewPager) findViewById(R.id.view_pager);
+        viewPager = findViewById(R.id.view_pager);
         PagerAdapter adapter = new PagerAdapter(getSupportFragmentManager());
         viewPager.setAdapter(adapter);
 
-        shapeSelectorTouchHandler = new ImageTouchListener(imageView, shapeView);
-        hidePagerButtonTouchHandler = new ImageButtonTouch();
+        SharedPreferences sharedPref = getSharedPreferences("settings",MODE_PRIVATE);
+        String[] selectorTitles = getResources().getStringArray(R.array.selector_types);
+        if (sharedPref.getString("selectionType",selectorTitles[0]).equals(selectorTitles[0]))
+            shapeView.setOnTouchListener(new PolygonTouchListener(shapeView));
+        else
+            shapeView.setOnTouchListener(new RectangleTouchListener(shapeView));
+        shapeView.setColor(sharedPref.getInt("selectorColor", Color.WHITE));
 
-        shapeView.setOnTouchListener(shapeSelectorTouchHandler);
-        pagerHideButton.setOnTouchListener(hidePagerButtonTouchHandler);
+        switch (sharedPref.getInt("effectType",0)){
+            case 0:
+                bitmapProcessor.setEffect(new SquareEffect());
+                break;
+            case 1:
+                bitmapProcessor.setEffect(new BlurEffect());
+                break;
+            case 2:
+                bitmapProcessor.setEffect(new ColorEffect());
+        }
+
+        pagerHideButton.setOnTouchListener(new ImageButtonTouch());
         updateHideButtonDrawable(true);
 
     }
@@ -81,7 +99,9 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
 
         switch (v.getId()){
             case R.id.apply_changes:
+                if (!bitmapProcessor.isBitmapLoaded()) return;
                 bitmapProcessor.applySelection();
+                shapeView.resetShape();
                 break;
             case R.id.select_image:
                 Intent intent = new Intent();
@@ -91,12 +111,13 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
                 break;
             case R.id.clear_selection:
                 shapeView.resetShape();
-                shapeView.invalidate();
                 break;
             case R.id.turn_left:
+                if (!bitmapProcessor.isBitmapLoaded()) return;
                 bitmapProcessor.rotate(-90);
                 break;
             case R.id.turn_right:
+                if (!bitmapProcessor.isBitmapLoaded()) return;
                 bitmapProcessor.rotate(90);
                 break;
             case R.id.switch_tab:
@@ -107,6 +128,10 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
                 break;
             case R.id.selection_settings:
                 selectionSettingsDialog();
+                break;
+            case R.id.export_image:
+                if (!bitmapProcessor.isBitmapLoaded()) return;
+                saveFile();
                 break;
         }
 
@@ -137,12 +162,14 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
     }
 
     private void displayCensorTypeDialog(){
-
-        CensorTypeDialog dialog = new CensorTypeDialog(this);
-
+        new CensorTypeDialog(this, bitmapProcessor);
     }
 
     private void selectionSettingsDialog(){
+        new SelectorEditDialog(this, shapeView);
+    }
+
+    private void saveFile(){
 
     }
 

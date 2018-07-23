@@ -1,4 +1,4 @@
-package ua.sytor.censor.sromku;
+package ua.sytor.censor.math;
 
 import java.util.ArrayList;
 import java.util.List;

@@ -1,4 +1,4 @@
-package ua.sytor.censor;
+package ua.sytor.censor.selectors;
 
 import android.graphics.PointF;
 import android.support.v4.view.GestureDetectorCompat;
@@ -6,22 +6,19 @@ import android.util.Log;
 import android.view.GestureDetector;
 import android.view.MotionEvent;
 import android.view.View;
-import android.widget.ImageView;
 
 import ua.sytor.censor.ui.ShapeView;
 
-public class ImageTouchListener implements View.OnTouchListener{
+public class PolygonTouchListener implements View.OnTouchListener{
 
     private GestureDetectorCompat gestureDetectorCompat;
 
-    private ImageView imageView;
     private ShapeView shapeView;
 
     //Currently selected point
     private PointF point;
 
-    ImageTouchListener(ImageView imageView, ShapeView shapeView){
-        this.imageView = imageView;
+    public PolygonTouchListener(ShapeView shapeView){
         this.shapeView = shapeView;
         gestureDetectorCompat = new GestureDetectorCompat(shapeView.getContext(), new SingleTapConfirm());
     }
@@ -30,7 +27,6 @@ public class ImageTouchListener implements View.OnTouchListener{
     public boolean onTouch(View view, MotionEvent event) {
 
         float x = event.getX(), y = event.getY();
-        Log.wtf("123","x = " + x + " y = " + y);
 
         //single click
         if (gestureDetectorCompat.onTouchEvent(event)){

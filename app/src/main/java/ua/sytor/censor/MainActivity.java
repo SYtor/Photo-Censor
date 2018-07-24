@@ -1,13 +1,17 @@
 package ua.sytor.censor;
 
+import android.Manifest;
 import android.arch.lifecycle.ViewModelProviders;
 import android.content.Intent;
 import android.content.SharedPreferences;
+import android.content.pm.PackageManager;
 import android.graphics.Color;
 import android.graphics.PorterDuff;
 import android.graphics.drawable.Drawable;
 import android.graphics.drawable.LayerDrawable;
+import android.support.annotation.NonNull;
 import android.support.constraint.ConstraintLayout;
+import android.support.v4.app.ActivityCompat;
 import android.support.v4.content.ContextCompat;
 import android.support.v4.view.GestureDetectorCompat;
 import android.support.v4.view.ViewPager;
@@ -43,6 +47,7 @@ import ua.sytor.censor.ui.tabs.PagerAdapter;
 public class MainActivity extends AppCompatActivity implements View.OnClickListener {
 
     public static final int PICK_IMAGE = 1;
+    public static final int PERMISSION_REQUEST = 123;
 
     private ImageView imageView;
     private ShapeView shapeView;
@@ -114,6 +119,19 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
     }
 
     @Override
+    public void onRequestPermissionsResult(int requestCode, @NonNull String[] permissions, @NonNull int[] grantResults) {
+        switch (requestCode) {
+            case PERMISSION_REQUEST:
+                if (grantResults.length > 0 && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
+                    saveFile();
+                } else {
+                    Toast.makeText(this, R.string.cant_create_file, Toast.LENGTH_LONG).show();
+                }
+        }
+
+    }
+
+    @Override
     public void onClick(View v){
 
         if (isLoading){
@@ -174,11 +192,15 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
                     Toast.makeText(this, R.string.load_image_first, Toast.LENGTH_LONG).show();
                     return;
                 }
+                if (ContextCompat.checkSelfPermission(this, Manifest.permission.WRITE_EXTERNAL_STORAGE)
+                        != PackageManager.PERMISSION_GRANTED) {
+                    ActivityCompat.requestPermissions(this,
+                            new String[]{Manifest.permission.WRITE_EXTERNAL_STORAGE},
+                            PERMISSION_REQUEST);
+                    return;
+                }
                 setLoading(true);
-                bitmapProcessor.saveFile().observe(this, message ->{
-                            Toast.makeText(this, message, Toast.LENGTH_LONG).show();
-                            setLoading(false);
-                        });
+                saveFile();
 
                 //Ads
                 if (interstitialAd.isLoaded())
@@ -245,6 +267,13 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
             viewPager.animate().translationY(viewPager.getHeight());
             findViewById(R.id.constraint).animate().translationY(viewPager.getHeight());
         }
+    }
+
+    private void saveFile(){
+        bitmapProcessor.saveFile().observe(this, message ->{
+            Toast.makeText(this, message, Toast.LENGTH_LONG).show();
+            setLoading(false);
+        });
     }
 
     private void displayCensorTypeDialog(){

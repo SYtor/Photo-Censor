@@ -19,6 +19,7 @@ import ua.sytor.censor.BitmapProcessor;
 import ua.sytor.censor.R;
 import ua.sytor.censor.effects.BlurEffect;
 import ua.sytor.censor.effects.ColorEffect;
+import ua.sytor.censor.effects.Effect;
 import ua.sytor.censor.effects.SquareEffect;
 
 public class CensorTypeDialog {
@@ -44,6 +45,14 @@ public class CensorTypeDialog {
 
         initViews(context);
 
+        if(bitmapProcessor.getEffect() instanceof BlurEffect)
+            spinner.setSelection(Effect.BLUR);
+        else if(bitmapProcessor.getEffect() instanceof SquareEffect)
+            spinner.setSelection(Effect.SQUARES);
+        else if(bitmapProcessor.getEffect() instanceof ColorEffect)
+            spinner.setSelection(Effect.COLOR_FILL);
+
+
         dialogBuilder = new AlertDialog.Builder(context)
                 .setView(view)
                 .setPositiveButton(R.string.apply, (dialogInterface, i) -> {
@@ -54,12 +63,15 @@ public class CensorTypeDialog {
                         case 0:
                             editor.putInt("square",seekBar.getProgress()+1);
                             bitmapProcessor.setEffect(new SquareEffect());
+                            break;
                         case 1:
                             editor.putInt("blur",seekBar.getProgress()+1);
                             bitmapProcessor.setEffect(new BlurEffect());
+                            break;
                         case 2:
                             editor.putInt("color", selectedColor);
                             bitmapProcessor.setEffect(new ColorEffect());
+                            break;
                     }
                     editor.apply();
                 })
@@ -83,7 +95,9 @@ public class CensorTypeDialog {
 
         //Color input
         spectrumPalette = new SpectrumPalette(context);
-        spectrumPalette.setColors(new int[]{Color.WHITE, Color.BLACK, Color.BLUE, Color.YELLOW});
+        spectrumPalette.setColors(new int[]{
+                Color.WHITE, Color.BLACK, Color.BLUE,
+                Color.YELLOW, Color.RED, Color.MAGENTA});
         spectrumPalette.setOnColorSelectedListener(color -> selectedColor = color);
 
         //Fill spinner with data
@@ -104,7 +118,6 @@ public class CensorTypeDialog {
 
             }
         });
-        spinnerSelect(0);
     }
 
     private void spinnerSelect(int position){

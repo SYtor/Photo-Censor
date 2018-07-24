@@ -110,15 +110,8 @@ public class ShapeView extends View {
         return isClosed;
     }
 
-    public void setPaint(Paint paint) {
-        this.paint = paint;
-    }
-
-    public Paint getPaint() {
-        return paint;
-    }
-
     public void setColor(int color){
         paint.setColor(color);
+        invalidate();
     }
 }

@@ -11,19 +11,25 @@ import ua.sytor.censor.math.Polygon;
 
 public class SquareEffect implements Effect {
 
-
+    protected int maxScale = 7;
 
     @Override
     public void apply(Context context, Bitmap bitmap, Polygon polygon) {
 
-        int scale = context.getSharedPreferences("settings",Context.MODE_PRIVATE).getInt("",3);
+        int scale = context.getSharedPreferences("settings",Context.MODE_PRIVATE)
+                .getInt("square",3);
 
         Paint paint = new Paint();
         paint.setStyle(Paint.Style.FILL);
         Point tmpPoint = new Point(0,0);
         Canvas canvas = new Canvas(bitmap);
 
-        int squareSize = Math.min(bitmap.getWidth(),bitmap.getHeight()) / 10;
+        int min = Math.min(bitmap.getWidth(),bitmap.getHeight()) / 100 * 5;
+        int max = Math.min(bitmap.getWidth(),bitmap.getHeight()) / 100 * 25;
+
+        int squareSize = scale * (max-min) / maxScale;
+
+        //int squareSize = Math.min(bitmap.getWidth(),bitmap.getHeight()) / 10 * scale;
 
         int squareHalf = squareSize / 2;
 

@@ -7,12 +7,21 @@ import android.graphics.Matrix;
 import android.graphics.PointF;
 import android.graphics.Rect;
 import android.net.Uri;
+import android.os.Environment;
 import android.util.Log;
 import android.widget.ImageView;
+import android.widget.Toast;
+
+import java.io.File;
 import java.io.FileNotFoundException;
+import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.OutputStream;
+import java.text.SimpleDateFormat;
 import java.util.ArrayList;
+import java.util.Calendar;
+import java.util.Date;
 import java.util.List;
 
 import ua.sytor.censor.effects.Effect;
@@ -153,7 +162,38 @@ public class BitmapProcessor {
         this.effect = effect;
     }
 
+    public Effect getEffect() {
+        return effect;
+    }
+
     public boolean isBitmapLoaded(){
         return bitmap != null;
+    }
+
+
+    public void saveFile(){
+
+        Date currentTime = Calendar.getInstance().getTime();
+
+        try {
+
+            File file = new File(Environment.getExternalStorageDirectory()
+                    + "/PhotoCensor/IMG" +
+                    new SimpleDateFormat("YYYYMMdd-kkmmss").format(currentTime) + ".png");
+
+            Log.wtf("123",file.getAbsolutePath());
+
+            file.getParentFile().mkdirs();
+            file.createNewFile();
+
+            OutputStream fileOutputStream = new FileOutputStream(file);
+            bitmap.compress(Bitmap.CompressFormat.PNG, 50, fileOutputStream);
+
+            Toast.makeText(context,"Exported to " + file.getAbsolutePath(),Toast.LENGTH_LONG).show();
+
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+
     }
 }

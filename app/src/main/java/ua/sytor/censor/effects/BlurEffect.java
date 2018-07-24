@@ -1,15 +1,9 @@
 package ua.sytor.censor.effects;
 
-import android.content.Context;
-import android.graphics.Bitmap;
+public class BlurEffect extends SquareEffect {
 
-import ua.sytor.censor.math.Polygon;
-
-public class BlurEffect implements Effect {
-
-    @Override
-    public void apply(Context context, Bitmap bitmap, Polygon polygon) {
-
+    public BlurEffect(){
+        super.maxScale = 21;
     }
 
 }

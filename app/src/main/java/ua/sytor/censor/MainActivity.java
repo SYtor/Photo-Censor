@@ -12,19 +12,26 @@ import android.support.v4.view.GestureDetectorCompat;
 import android.support.v4.view.ViewPager;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
+import android.util.Log;
 import android.view.GestureDetector;
 import android.view.MotionEvent;
 import android.view.View;
 import android.widget.ImageButton;
 import android.widget.ImageView;
 
-import java.io.IOException;
+import com.google.android.gms.ads.AdListener;
+import com.google.android.gms.ads.AdRequest;
+import com.google.android.gms.ads.InterstitialAd;
+import com.google.android.gms.ads.MobileAds;
 
+import java.io.IOException;
 import ua.sytor.censor.effects.BlurEffect;
 import ua.sytor.censor.effects.ColorEffect;
+import ua.sytor.censor.effects.Effect;
 import ua.sytor.censor.effects.SquareEffect;
 import ua.sytor.censor.selectors.PolygonTouchListener;
 import ua.sytor.censor.selectors.RectangleTouchListener;
+import ua.sytor.censor.selectors.Selector;
 import ua.sytor.censor.ui.dialogs.CensorTypeDialog;
 import ua.sytor.censor.ui.ShapeView;
 import ua.sytor.censor.ui.dialogs.SelectorEditDialog;
@@ -43,6 +50,8 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
 
     private ImageButton pagerHideButton;
 
+    private InterstitialAd interstitialAd;
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -59,38 +68,56 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
         viewPager.setAdapter(adapter);
 
         SharedPreferences sharedPref = getSharedPreferences("settings",MODE_PRIVATE);
-        String[] selectorTitles = getResources().getStringArray(R.array.selector_types);
-        if (sharedPref.getString("selectionType",selectorTitles[0]).equals(selectorTitles[0]))
+
+        if (sharedPref.getInt("selectionType", Selector.POLYGON_TYPE) == Selector.POLYGON_TYPE)
             shapeView.setOnTouchListener(new PolygonTouchListener(shapeView));
         else
             shapeView.setOnTouchListener(new RectangleTouchListener(shapeView));
         shapeView.setColor(sharedPref.getInt("selectorColor", Color.WHITE));
 
-        switch (sharedPref.getInt("effectType",0)){
-            case 0:
+        switch (sharedPref.getInt("effectType",Effect.SQUARES)){
+            case Effect.SQUARES:
                 bitmapProcessor.setEffect(new SquareEffect());
                 break;
-            case 1:
+            case Effect.BLUR:
                 bitmapProcessor.setEffect(new BlurEffect());
                 break;
-            case 2:
+            case Effect.COLOR_FILL:
                 bitmapProcessor.setEffect(new ColorEffect());
         }
 
         pagerHideButton.setOnTouchListener(new ImageButtonTouch());
         updateHideButtonDrawable(true);
 
+        //Ads
+
+        MobileAds.initialize(this, getString(R.string.app_id));
+        interstitialAd = new InterstitialAd(this);
+        interstitialAd.setAdUnitId(getString(R.string.ad_unit_id));
+        interstitialAd.loadAd(new AdRequest.Builder().build());
+        interstitialAd.setAdListener(new AdListener(){
+            @Override
+            public void onAdClosed() {
+                interstitialAd.loadAd(new AdRequest.Builder().build());
+            }
+        });
+
     }
 
     @Override
     public void onActivityResult(int requestCode, int resultCode, Intent data)    {
-        if (requestCode == PICK_IMAGE) {
-            bitmapProcessor.setUri(data.getData());
-            try {
-                bitmapProcessor.updateImageView();
-            } catch (IOException e) {
-                e.printStackTrace();
-            }
+
+        switch (requestCode){
+
+            case PICK_IMAGE:
+
+                bitmapProcessor.setUri(data.getData());
+                try {
+                    bitmapProcessor.updateImageView();
+                } catch (IOException e) {
+                    e.printStackTrace();
+                }
+                break;
         }
     }
 
@@ -100,6 +127,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
         switch (v.getId()){
             case R.id.apply_changes:
                 if (!bitmapProcessor.isBitmapLoaded()) return;
+                if (!shapeView.isClosed()) return;
                 bitmapProcessor.applySelection();
                 shapeView.resetShape();
                 break;
@@ -131,7 +159,11 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
                 break;
             case R.id.export_image:
                 if (!bitmapProcessor.isBitmapLoaded()) return;
-                saveFile();
+                bitmapProcessor.saveFile();
+
+                //Ads
+                if (interstitialAd.isLoaded())
+                    interstitialAd.show();
                 break;
         }
 
@@ -167,10 +199,6 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
 
     private void selectionSettingsDialog(){
         new SelectorEditDialog(this, shapeView);
-    }
-
-    private void saveFile(){
-
     }
 
     private class ImageButtonTouch implements View.OnTouchListener{

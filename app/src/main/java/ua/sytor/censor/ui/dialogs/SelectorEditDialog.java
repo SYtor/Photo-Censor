@@ -12,6 +12,7 @@ import android.widget.Spinner;
 import com.thebluealliance.spectrum.SpectrumPalette;
 
 import ua.sytor.censor.R;
+import ua.sytor.censor.effects.Effect;
 import ua.sytor.censor.selectors.PolygonTouchListener;
 import ua.sytor.censor.selectors.RectangleTouchListener;
 import ua.sytor.censor.ui.ShapeView;
@@ -36,10 +37,12 @@ public class SelectorEditDialog {
         String[] selectorTitles = context.getResources().getStringArray(R.array.selector_types);
         spinner.setAdapter(new ArrayAdapter<>(context,android.R.layout.simple_spinner_dropdown_item,
                 selectorTitles));
+        spinner.setSelection(sharedPreferences.getInt("selectionType",0));
 
         SpectrumPalette spectrumPalette  = view.findViewById(R.id.palette);
         spectrumPalette.setColors(new int[]{Color.WHITE, Color.BLACK, Color.BLUE, Color.YELLOW});
         spectrumPalette.setOnColorSelectedListener(color -> selectedColor = color);
+        spectrumPalette.setSelectedColor(sharedPreferences.getInt("selectorColor",Color.WHITE));
 
         AlertDialog.Builder builder = new AlertDialog.Builder(context)
                 .setView(view)
@@ -51,9 +54,10 @@ public class SelectorEditDialog {
                         case 1:
                             shapeView.setOnTouchListener(new RectangleTouchListener(shapeView));
                     }
+                    shapeView.setColor(selectedColor);
+                    shapeView.resetShape();
                     sharedPreferences.edit()
-                            .putString("selectionType",
-                                    selectorTitles[spinner.getSelectedItemPosition()])
+                            .putInt("selectionType", spinner.getSelectedItemPosition())
                             .putInt("selectorColor",selectedColor)
                             .apply();
 

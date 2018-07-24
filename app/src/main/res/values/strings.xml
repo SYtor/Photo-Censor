@@ -40,4 +40,8 @@
 
     <string name="file_name">File name</string>
 
+    <string name="saved_to">Saved to </string>
+    <string name="cant_create_file">Can\'t create file</string>
+    <string name="error">Error </string>
+
 </resources>

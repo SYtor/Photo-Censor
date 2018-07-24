@@ -1,5 +1,6 @@
 package ua.sytor.censor;
 
+import android.arch.lifecycle.ViewModelProviders;
 import android.content.Intent;
 import android.content.SharedPreferences;
 import android.graphics.Color;
@@ -12,19 +13,21 @@ import android.support.v4.view.GestureDetectorCompat;
 import android.support.v4.view.ViewPager;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
-import android.util.Log;
 import android.view.GestureDetector;
 import android.view.MotionEvent;
 import android.view.View;
 import android.widget.ImageButton;
 import android.widget.ImageView;
+import android.widget.ProgressBar;
+import android.widget.Toast;
 
 import com.google.android.gms.ads.AdListener;
 import com.google.android.gms.ads.AdRequest;
 import com.google.android.gms.ads.InterstitialAd;
 import com.google.android.gms.ads.MobileAds;
 
-import java.io.IOException;
+import java.io.FileNotFoundException;
+
 import ua.sytor.censor.effects.BlurEffect;
 import ua.sytor.censor.effects.ColorEffect;
 import ua.sytor.censor.effects.Effect;
@@ -45,12 +48,16 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
     private ShapeView shapeView;
 
     private ViewPager viewPager;
+    private ImageButton pagerHideButton;
+
+    ProgressBar progressBar;
+
+    private InterstitialAd interstitialAd;
 
     private BitmapProcessor bitmapProcessor;
 
-    private ImageButton pagerHideButton;
-
-    private InterstitialAd interstitialAd;
+    private View.OnTouchListener shapeViewTouchListener;
+    private boolean isLoading;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -59,35 +66,22 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
 
         imageView = findViewById(R.id.image_view);
         shapeView = findViewById(R.id.shape_view);
-        pagerHideButton = findViewById(R.id.image_button);
-
-        bitmapProcessor = new BitmapProcessor(this, imageView, shapeView);
 
         viewPager = findViewById(R.id.view_pager);
-        PagerAdapter adapter = new PagerAdapter(getSupportFragmentManager());
-        viewPager.setAdapter(adapter);
+        pagerHideButton = findViewById(R.id.image_button);
 
-        SharedPreferences sharedPref = getSharedPreferences("settings",MODE_PRIVATE);
+        progressBar = findViewById(R.id.progress);
 
-        if (sharedPref.getInt("selectionType", Selector.POLYGON_TYPE) == Selector.POLYGON_TYPE)
-            shapeView.setOnTouchListener(new PolygonTouchListener(shapeView));
-        else
-            shapeView.setOnTouchListener(new RectangleTouchListener(shapeView));
-        shapeView.setColor(sharedPref.getInt("selectorColor", Color.WHITE));
+        bitmapProcessor = ViewModelProviders.of(this).get(BitmapProcessor.class);
+        bitmapProcessor.onImageChanges()
+                .observe(this, bitmap -> {
+                    imageView.setImageBitmap(bitmap);
+                    setLoading(false);
+                });
 
-        switch (sharedPref.getInt("effectType",Effect.SQUARES)){
-            case Effect.SQUARES:
-                bitmapProcessor.setEffect(new SquareEffect());
-                break;
-            case Effect.BLUR:
-                bitmapProcessor.setEffect(new BlurEffect());
-                break;
-            case Effect.COLOR_FILL:
-                bitmapProcessor.setEffect(new ColorEffect());
-        }
+        initViews();
 
-        pagerHideButton.setOnTouchListener(new ImageButtonTouch());
-        updateHideButtonDrawable(true);
+        isLoading = false;
 
         //Ads
 
@@ -110,11 +104,10 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
         switch (requestCode){
 
             case PICK_IMAGE:
-
-                bitmapProcessor.setUri(data.getData());
+                setLoading(true);
                 try {
-                    bitmapProcessor.updateImageView();
-                } catch (IOException e) {
+                    bitmapProcessor.loadImage(data.getData());
+                } catch (FileNotFoundException e) {
                     e.printStackTrace();
                 }
                 break;
@@ -128,7 +121,8 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
             case R.id.apply_changes:
                 if (!bitmapProcessor.isBitmapLoaded()) return;
                 if (!shapeView.isClosed()) return;
-                bitmapProcessor.applySelection();
+                setLoading(true);
+                bitmapProcessor.applySelection(shapeView, imageView);
                 shapeView.resetShape();
                 break;
             case R.id.select_image:
@@ -141,10 +135,12 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
                 shapeView.resetShape();
                 break;
             case R.id.turn_left:
+                setLoading(true);
                 if (!bitmapProcessor.isBitmapLoaded()) return;
                 bitmapProcessor.rotate(-90);
                 break;
             case R.id.turn_right:
+                setLoading(true);
                 if (!bitmapProcessor.isBitmapLoaded()) return;
                 bitmapProcessor.rotate(90);
                 break;
@@ -159,7 +155,11 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
                 break;
             case R.id.export_image:
                 if (!bitmapProcessor.isBitmapLoaded()) return;
-                bitmapProcessor.saveFile();
+                setLoading(true);
+                bitmapProcessor.saveFile().observe(this, message ->{
+                            Toast.makeText(getApplication(), message, Toast.LENGTH_LONG).show();
+                            setLoading(false);
+                        });
 
                 //Ads
                 if (interstitialAd.isLoaded())
@@ -167,6 +167,45 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
                 break;
         }
 
+    }
+
+    private void initViews(){
+        PagerAdapter adapter = new PagerAdapter(getSupportFragmentManager());
+        viewPager.setAdapter(adapter);
+
+        SharedPreferences sharedPref = getSharedPreferences("settings",MODE_PRIVATE);
+
+        if (sharedPref.getInt("selectionType", Selector.POLYGON_TYPE) == Selector.POLYGON_TYPE)
+            shapeViewTouchListener = new PolygonTouchListener(shapeView);
+        else
+            shapeViewTouchListener = new RectangleTouchListener(shapeView);
+
+        shapeView.setOnTouchListener(shapeViewTouchListener);
+        shapeView.setColor(sharedPref.getInt("selectorColor", Color.WHITE));
+
+        switch (sharedPref.getInt("effectType", Effect.SQUARES)){
+            case Effect.SQUARES:
+                bitmapProcessor.setEffect(new SquareEffect());
+                break;
+            case Effect.BLUR:
+                bitmapProcessor.setEffect(new BlurEffect());
+                break;
+            case Effect.COLOR_FILL:
+                bitmapProcessor.setEffect(new ColorEffect());
+        }
+
+        pagerHideButton.setOnTouchListener(new ImageButtonTouch());
+        updateHideButtonDrawable(true);
+    }
+
+    private void setLoading(boolean isLoading){
+        this.isLoading = isLoading;
+        int visibility = isLoading ? View.VISIBLE : View.GONE;
+        if (isLoading)
+            shapeView.setOnTouchListener((view, motionEvent) -> false);
+        else
+            shapeView.setOnTouchListener(shapeViewTouchListener);
+        progressBar.setVisibility(visibility);
     }
 
     private void updateHideButtonDrawable(boolean isVisible){

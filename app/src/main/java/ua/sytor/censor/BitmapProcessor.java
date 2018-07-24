@@ -1,6 +1,9 @@
 package ua.sytor.censor;
 
-import android.content.Context;
+import android.app.Application;
+import android.arch.lifecycle.AndroidViewModel;
+import android.arch.lifecycle.LiveData;
+import android.arch.lifecycle.MutableLiveData;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.graphics.Matrix;
@@ -10,8 +13,6 @@ import android.net.Uri;
 import android.os.Environment;
 import android.util.Log;
 import android.widget.ImageView;
-import android.widget.Toast;
-
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
@@ -23,52 +24,51 @@ import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.Date;
 import java.util.List;
-
 import ua.sytor.censor.effects.Effect;
 import ua.sytor.censor.math.Point;
 import ua.sytor.censor.math.Polygon;
 import ua.sytor.censor.ui.ShapeView;
 
-public class BitmapProcessor {
+public class BitmapProcessor extends AndroidViewModel{
 
     private final static int maxBitmapSize = 2048 * 2048;
 
-    private Context context;
-    private ImageView imageView;
-    private ShapeView shapeView;
+    private MutableLiveData<Bitmap> bitmapMutableLiveData;
 
-    private Uri uri;
     private int imageWidth, imageHeight;
-    private int squareSize;
-
     private Bitmap bitmap;
 
     private Effect effect;
 
-    public BitmapProcessor(Context context, ImageView imageView, ShapeView shapeView){
-        this.context = context;
-        this.imageView = imageView;
-        this.shapeView = shapeView;
-        squareSize = 10;
+    public BitmapProcessor(Application application){
+        super(application);
     }
 
-    public void updateImageView() throws IOException {
-        if (uri == null)
-            return;
-
-        InputStream is = context.getContentResolver().openInputStream(uri);
-
-        if (imageWidth * imageHeight > maxBitmapSize){
-            Log.wtf("123","big img" + imageWidth + " " + imageHeight);
-            bitmap = decodeSampledBitmap(is);
-        }
-        else
-            bitmap = BitmapFactory.decodeStream(is);
-
-        imageView.setImageBitmap(bitmap);
+    public LiveData<Bitmap> onImageChanges(){
+        if (bitmapMutableLiveData == null) bitmapMutableLiveData = new MutableLiveData<>();
+        return bitmapMutableLiveData;
     }
 
-    private Bitmap decodeSampledBitmap(InputStream inputStream) throws FileNotFoundException {
+    public void loadImage(Uri uri) throws FileNotFoundException{
+        InputStream is = getApplication().getContentResolver().openInputStream(uri);
+
+        new Thread(() -> {
+
+            if (imageWidth * imageHeight > maxBitmapSize){
+                Log.wtf("123","big img" + imageWidth + " " + imageHeight);
+                bitmap = decodeSampledBitmap(is);
+            }
+            else
+                bitmap = BitmapFactory.decodeStream(is);
+
+            bitmapMutableLiveData.postValue(bitmap);
+
+        }).start();
+
+
+    }
+
+    private Bitmap decodeSampledBitmap(InputStream inputStream){
 
         final BitmapFactory.Options options = new BitmapFactory.Options();
 
@@ -88,7 +88,7 @@ public class BitmapProcessor {
     }
 
 
-    public void applySelection() {
+    public void applySelection(ShapeView shapeView, ImageView imageView) {
 
         //Read input file
 
@@ -118,43 +118,24 @@ public class BitmapProcessor {
             polygonBuilder.addVertex(new Point(point.x,point.y));
         Polygon polygon = polygonBuilder.build();
 
-
         //Drawing objects
+        new Thread(() -> {
+            effect.apply(getApplication(), bitmap, polygon);
+            bitmapMutableLiveData.postValue(bitmap);
+        }).start();
 
-        effect.apply(context, bitmap, polygon);
-
-        imageView.setImageBitmap(bitmap);
-
-    }
-
-
-    public void setUri(Uri uri) {
-        this.uri = uri;
-
-        BitmapFactory.Options options = new BitmapFactory.Options();
-        options.inJustDecodeBounds = true;
-        try {
-            BitmapFactory.decodeStream(context.getContentResolver().openInputStream(uri),new Rect(),options);
-            imageHeight = options.outHeight;
-            imageWidth = options.outWidth;
-        } catch (FileNotFoundException e) {
-            imageHeight = -1;
-            imageWidth = -1;
-        }
-
-    }
-
-    public Uri getUri() {
-        return uri;
     }
 
 
     public void rotate(float degrees){
 
-        Matrix matrix = new Matrix();
-        matrix.postRotate(degrees);
-        bitmap = Bitmap.createBitmap(bitmap,0,0,bitmap.getWidth(),bitmap.getHeight(),matrix,true);
-        imageView.setImageBitmap(bitmap);
+        new Thread(() -> {
+            Matrix matrix = new Matrix();
+            matrix.postRotate(degrees);
+            bitmap = Bitmap.createBitmap(bitmap,0,0,bitmap.getWidth(),bitmap.getHeight(),matrix,true);
+            bitmapMutableLiveData.postValue(bitmap);
+        }).start();
+
 
     }
 
@@ -170,30 +151,34 @@ public class BitmapProcessor {
         return bitmap != null;
     }
 
+    public MutableLiveData<String> saveFile(){
 
-    public void saveFile(){
+        final MutableLiveData<String> message = new MutableLiveData<>();
 
-        Date currentTime = Calendar.getInstance().getTime();
+        new Thread(() -> {
 
-        try {
+            try {
+                Date currentTime = Calendar.getInstance().getTime();
+                File file = new File(Environment.getExternalStorageDirectory()
+                        + "/PhotoCensor/IMG" + new SimpleDateFormat("YYYYMMdd-kkmmss")
+                                .format(currentTime) + ".png");
 
-            File file = new File(Environment.getExternalStorageDirectory()
-                    + "/PhotoCensor/IMG" +
-                    new SimpleDateFormat("YYYYMMdd-kkmmss").format(currentTime) + ".png");
+                Log.wtf("123",file.getAbsolutePath());
 
-            Log.wtf("123",file.getAbsolutePath());
+                file.getParentFile().mkdirs();
+                if (file.createNewFile()){
+                    OutputStream fileOutputStream = new FileOutputStream(file);
+                    bitmap.compress(Bitmap.CompressFormat.PNG, 50, fileOutputStream);
+                    message.postValue(getApplication().getString(R.string.saved_to) +
+                            file.getAbsolutePath());
+                }else
+                    message.postValue(getApplication().getString(R.string.cant_create_file));
 
-            file.getParentFile().mkdirs();
-            file.createNewFile();
+            } catch (IOException e) {
+                message.postValue(getApplication().getString(R.string.error) + e.getMessage());
+            }
+        }).start();
 
-            OutputStream fileOutputStream = new FileOutputStream(file);
-            bitmap.compress(Bitmap.CompressFormat.PNG, 50, fileOutputStream);
-
-            Toast.makeText(context,"Exported to " + file.getAbsolutePath(),Toast.LENGTH_LONG).show();
-
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
-
+        return message;
     }
 }

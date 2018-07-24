@@ -6,6 +6,7 @@ import android.graphics.Color;
 import android.graphics.Paint;
 import android.graphics.PointF;
 import android.util.AttributeSet;
+import android.view.MotionEvent;
 import android.view.View;
 
 import java.util.ArrayList;
@@ -20,6 +21,8 @@ public class ShapeView extends View {
     private boolean isClosed;
 
     private Paint paint;
+
+    private OnTouchListener touchListener;
 
     public ShapeView(Context context) {
         super(context);
@@ -113,5 +116,18 @@ public class ShapeView extends View {
     public void setColor(int color){
         paint.setColor(color);
         invalidate();
+    }
+
+
+    //allows disable input
+    public void setTouchability(boolean isTouchable){
+        if (isTouchable) setOnTouchListener(touchListener);
+        else setOnTouchListener((view, motionEvent) -> false);
+    }
+
+    //allows to save touch listener for further usage
+    public void setTouch(OnTouchListener onTouchListener){
+        this.touchListener = onTouchListener;
+        setOnTouchListener(touchListener);
     }
 }

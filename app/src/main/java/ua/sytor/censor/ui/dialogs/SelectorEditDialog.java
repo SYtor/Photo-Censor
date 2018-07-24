@@ -40,7 +40,8 @@ public class SelectorEditDialog {
         spinner.setSelection(sharedPreferences.getInt("selectionType",0));
 
         SpectrumPalette spectrumPalette  = view.findViewById(R.id.palette);
-        spectrumPalette.setColors(new int[]{Color.WHITE, Color.BLACK, Color.BLUE, Color.YELLOW});
+        spectrumPalette.setColors(new int[]{
+            Color.WHITE, Color.BLACK, Color.BLUE, Color.YELLOW, Color.RED, Color.MAGENTA});
         spectrumPalette.setOnColorSelectedListener(color -> selectedColor = color);
         spectrumPalette.setSelectedColor(sharedPreferences.getInt("selectorColor",Color.WHITE));
 
@@ -49,10 +50,10 @@ public class SelectorEditDialog {
                 .setPositiveButton(R.string.apply, (dialogInterface, i) -> {
                     switch (spinner.getSelectedItemPosition()){
                         case 0:
-                            shapeView.setOnTouchListener(new PolygonTouchListener(shapeView));
+                            shapeView.setTouch(new PolygonTouchListener(shapeView));
                             break;
                         case 1:
-                            shapeView.setOnTouchListener(new RectangleTouchListener(shapeView));
+                            shapeView.setTouch(new RectangleTouchListener(shapeView));
                     }
                     shapeView.setColor(selectedColor);
                     shapeView.resetShape();
@@ -61,10 +62,7 @@ public class SelectorEditDialog {
                             .putInt("selectorColor",selectedColor)
                             .apply();
 
-                }).setNegativeButton(R.string.cancel, (dialogInterface, i) -> {
-
-                });
-
+                }).setNegativeButton(R.string.cancel, (dialogInterface, i) -> dialogInterface.cancel());
         builder.create().show();
 
     }

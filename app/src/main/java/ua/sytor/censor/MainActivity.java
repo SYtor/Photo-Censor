@@ -56,7 +56,6 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
 
     private BitmapProcessor bitmapProcessor;
 
-    private View.OnTouchListener shapeViewTouchListener;
     private boolean isLoading;
 
     @Override
@@ -108,7 +107,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
                 try {
                     bitmapProcessor.loadImage(data.getData());
                 } catch (FileNotFoundException e) {
-                    e.printStackTrace();
+                    Toast.makeText(this, R.string.cant_find_file, Toast.LENGTH_LONG).show();
                 }
                 break;
         }
@@ -117,10 +116,21 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
     @Override
     public void onClick(View v){
 
+        if (isLoading){
+            Toast.makeText(this, R.string.loading, Toast.LENGTH_LONG).show();
+            return;
+        }
+
         switch (v.getId()){
             case R.id.apply_changes:
-                if (!bitmapProcessor.isBitmapLoaded()) return;
-                if (!shapeView.isClosed()) return;
+                if (!bitmapProcessor.isBitmapLoaded()){
+                    Toast.makeText(this, R.string.load_image_first, Toast.LENGTH_LONG).show();
+                    return;
+                }
+                if (!shapeView.isClosed()){
+                    Toast.makeText(this, R.string.select_shape_first, Toast.LENGTH_LONG).show();
+                    return;
+                }
                 setLoading(true);
                 bitmapProcessor.applySelection(shapeView, imageView);
                 shapeView.resetShape();
@@ -129,19 +139,25 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
                 Intent intent = new Intent();
                 intent.setType("image/*");
                 intent.setAction(Intent.ACTION_GET_CONTENT);
-                startActivityForResult(Intent.createChooser(intent, "Select Picture"), PICK_IMAGE);
+                startActivityForResult(Intent.createChooser(intent, getString(R.string.select_picture)), PICK_IMAGE);
                 break;
             case R.id.clear_selection:
                 shapeView.resetShape();
                 break;
             case R.id.turn_left:
                 setLoading(true);
-                if (!bitmapProcessor.isBitmapLoaded()) return;
+                if (!bitmapProcessor.isBitmapLoaded()){
+                    Toast.makeText(this, R.string.load_image_first, Toast.LENGTH_LONG).show();
+                    return;
+                }
                 bitmapProcessor.rotate(-90);
                 break;
             case R.id.turn_right:
                 setLoading(true);
-                if (!bitmapProcessor.isBitmapLoaded()) return;
+                if (!bitmapProcessor.isBitmapLoaded()){
+                    Toast.makeText(this, R.string.load_image_first, Toast.LENGTH_LONG).show();
+                    return;
+                }
                 bitmapProcessor.rotate(90);
                 break;
             case R.id.switch_tab:
@@ -154,10 +170,13 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
                 selectionSettingsDialog();
                 break;
             case R.id.export_image:
-                if (!bitmapProcessor.isBitmapLoaded()) return;
+                if (!bitmapProcessor.isBitmapLoaded()){
+                    Toast.makeText(this, R.string.load_image_first, Toast.LENGTH_LONG).show();
+                    return;
+                }
                 setLoading(true);
                 bitmapProcessor.saveFile().observe(this, message ->{
-                            Toast.makeText(getApplication(), message, Toast.LENGTH_LONG).show();
+                            Toast.makeText(this, message, Toast.LENGTH_LONG).show();
                             setLoading(false);
                         });
 
@@ -176,11 +195,10 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
         SharedPreferences sharedPref = getSharedPreferences("settings",MODE_PRIVATE);
 
         if (sharedPref.getInt("selectionType", Selector.POLYGON_TYPE) == Selector.POLYGON_TYPE)
-            shapeViewTouchListener = new PolygonTouchListener(shapeView);
+            shapeView.setTouch(new PolygonTouchListener(shapeView));
         else
-            shapeViewTouchListener = new RectangleTouchListener(shapeView);
+            shapeView.setTouch(new RectangleTouchListener(shapeView));
 
-        shapeView.setOnTouchListener(shapeViewTouchListener);
         shapeView.setColor(sharedPref.getInt("selectorColor", Color.WHITE));
 
         switch (sharedPref.getInt("effectType", Effect.SQUARES)){
@@ -201,10 +219,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
     private void setLoading(boolean isLoading){
         this.isLoading = isLoading;
         int visibility = isLoading ? View.VISIBLE : View.GONE;
-        if (isLoading)
-            shapeView.setOnTouchListener((view, motionEvent) -> false);
-        else
-            shapeView.setOnTouchListener(shapeViewTouchListener);
+        shapeView.setTouchability(!isLoading);
         progressBar.setVisibility(visibility);
     }
 

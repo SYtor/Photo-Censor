@@ -2,9 +2,7 @@
     <string name="app_name">Photo Censor</string>
 
     <string name="select_image">Select image</string>
-    <string name="select_color">Select color</string>
     <string name="apply_changes">Apply changes</string>
-    <string name="select_shape">Select shape</string>
 
 
     <string name="turn_left">Turn left</string>
@@ -14,8 +12,6 @@
 
     <string name="selection_setting">Selector edit</string>
     <string name="censor_type">Censor type</string>
-
-    <string name="squares_size">Square\'s size</string>
 
     <string name="apply">Apply</string>
     <string name="cancel">Cancel</string>
@@ -35,11 +31,6 @@
         <item>Rectangle</item>
     </string-array>
 
-    <string name="save">Save</string>
-    <string name="choose_folder">Choose folder</string>
-
-    <string name="file_name">File name</string>
-
     <string name="saved_to">Saved to </string>
     <string name="cant_create_file">Can\'t create file</string>
     <string name="error">Error </string>
@@ -48,5 +39,11 @@
     <string name="load_image_first">Load image first</string>
     <string name="select_shape_first">Select shape first (need to be closed)</string>
     <string name="cant_find_file">Can\'t find file</string>
+
+    <string name="rate_this_app">Rate this app</string>
+    <string name="remind_message">Do you enjoy application? Help other people to get it on Google Play. Rate it and write comment. Thanks for your support!</string>
+    <string name="rate_it_now">Rate it now</string>
+    <string name="remind_me_later">Remind me later</string>
+    <string name="no_thanks">No, thanks</string>
 
 </resources>

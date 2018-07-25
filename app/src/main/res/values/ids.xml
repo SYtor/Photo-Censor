@@ -2,12 +2,10 @@
 <resources>
     <item type="id" name="select_image"/>
     <item type="id" name="apply_changes"/>
-    <item type="id" name="select_shape"/>
     <item type="id" name="export_image"/>
 
     <item type="id" name="turn_left"/>
     <item type="id" name="turn_right"/>
-    <item type="id" name="select_color"/>
     <item type="id" name="clear_selection"/>
 
     <item type="id" name="censor_type"/>

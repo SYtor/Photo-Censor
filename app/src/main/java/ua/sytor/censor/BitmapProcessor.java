@@ -175,7 +175,7 @@ public class BitmapProcessor extends AndroidViewModel{
                     message.postValue(getApplication().getString(R.string.cant_create_file));
 
             } catch (IOException e) {
-                message.postValue(getApplication().getString(R.string.error) + e.getMessage());
+                message.postValue(getApplication().getString(R.string.error) + " " + e.getMessage());
             }
         }).start();
 

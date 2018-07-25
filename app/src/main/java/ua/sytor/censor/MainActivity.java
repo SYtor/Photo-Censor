@@ -1,7 +1,12 @@
 package ua.sytor.censor;
 
 import android.Manifest;
+import android.app.AlarmManager;
+import android.app.PendingIntent;
 import android.arch.lifecycle.ViewModelProviders;
+import android.content.ComponentName;
+import android.content.Context;
+import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.SharedPreferences;
 import android.content.pm.PackageManager;
@@ -9,12 +14,15 @@ import android.graphics.Color;
 import android.graphics.PorterDuff;
 import android.graphics.drawable.Drawable;
 import android.graphics.drawable.LayerDrawable;
+import android.net.Uri;
 import android.support.annotation.NonNull;
 import android.support.constraint.ConstraintLayout;
 import android.support.v4.app.ActivityCompat;
 import android.support.v4.content.ContextCompat;
+import android.support.v4.content.IntentCompat;
 import android.support.v4.view.GestureDetectorCompat;
 import android.support.v4.view.ViewPager;
+import android.support.v7.app.AlertDialog;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
 import android.view.GestureDetector;
@@ -68,6 +76,12 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
 
+        if (checkWritePermission()) {
+            ActivityCompat.requestPermissions(this,
+                    new String[]{Manifest.permission.WRITE_EXTERNAL_STORAGE},
+                    PERMISSION_REQUEST);
+        }
+
         imageView = findViewById(R.id.image_view);
         shapeView = findViewById(R.id.shape_view);
 
@@ -86,6 +100,8 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
         initViews();
 
         isLoading = false;
+
+        rateDialog();
 
         //Ads
 
@@ -120,33 +136,31 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
 
     @Override
     public void onRequestPermissionsResult(int requestCode, @NonNull String[] permissions, @NonNull int[] grantResults) {
-        switch (requestCode) {
-            case PERMISSION_REQUEST:
-                if (grantResults.length > 0 && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
-                    saveFile();
-                } else {
-                    Toast.makeText(this, R.string.cant_create_file, Toast.LENGTH_LONG).show();
-                }
-        }
-
+        if (checkWritePermission()) return;
+        PackageManager packageManager = getPackageManager();
+        Intent intent = packageManager.getLaunchIntentForPackage(getPackageName());
+        ComponentName componentName = intent.getComponent();
+        Intent mainIntent = Intent.makeRestartActivityTask(componentName);
+        startActivity(mainIntent);
+        System.exit(0);
     }
 
     @Override
     public void onClick(View v){
 
         if (isLoading){
-            Toast.makeText(this, R.string.loading, Toast.LENGTH_LONG).show();
+            Toast.makeText(this, R.string.loading, Toast.LENGTH_SHORT).show();
             return;
         }
 
         switch (v.getId()){
             case R.id.apply_changes:
                 if (!bitmapProcessor.isBitmapLoaded()){
-                    Toast.makeText(this, R.string.load_image_first, Toast.LENGTH_LONG).show();
+                    Toast.makeText(this, R.string.load_image_first, Toast.LENGTH_SHORT).show();
                     return;
                 }
                 if (!shapeView.isClosed()){
-                    Toast.makeText(this, R.string.select_shape_first, Toast.LENGTH_LONG).show();
+                    Toast.makeText(this, R.string.select_shape_first, Toast.LENGTH_SHORT).show();
                     return;
                 }
                 setLoading(true);
@@ -163,19 +177,19 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
                 shapeView.resetShape();
                 break;
             case R.id.turn_left:
-                setLoading(true);
                 if (!bitmapProcessor.isBitmapLoaded()){
-                    Toast.makeText(this, R.string.load_image_first, Toast.LENGTH_LONG).show();
+                    Toast.makeText(this, R.string.load_image_first, Toast.LENGTH_SHORT).show();
                     return;
                 }
+                setLoading(true);
                 bitmapProcessor.rotate(-90);
                 break;
             case R.id.turn_right:
-                setLoading(true);
                 if (!bitmapProcessor.isBitmapLoaded()){
-                    Toast.makeText(this, R.string.load_image_first, Toast.LENGTH_LONG).show();
+                    Toast.makeText(this, R.string.load_image_first, Toast.LENGTH_SHORT).show();
                     return;
                 }
+                setLoading(true);
                 bitmapProcessor.rotate(90);
                 break;
             case R.id.switch_tab:
@@ -189,14 +203,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
                 break;
             case R.id.export_image:
                 if (!bitmapProcessor.isBitmapLoaded()){
-                    Toast.makeText(this, R.string.load_image_first, Toast.LENGTH_LONG).show();
-                    return;
-                }
-                if (ContextCompat.checkSelfPermission(this, Manifest.permission.WRITE_EXTERNAL_STORAGE)
-                        != PackageManager.PERMISSION_GRANTED) {
-                    ActivityCompat.requestPermissions(this,
-                            new String[]{Manifest.permission.WRITE_EXTERNAL_STORAGE},
-                            PERMISSION_REQUEST);
+                    Toast.makeText(this, R.string.load_image_first, Toast.LENGTH_SHORT).show();
                     return;
                 }
                 setLoading(true);
@@ -282,6 +289,45 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
 
     private void selectionSettingsDialog(){
         new SelectorEditDialog(this, shapeView);
+    }
+
+    private void rateDialog(){
+        SharedPreferences sharedPreferences = getSharedPreferences("info",MODE_PRIVATE);
+        int count = sharedPreferences.getInt("count",0);
+        if (count == -1) return;
+
+        SharedPreferences.Editor editor = sharedPreferences.edit();
+
+        if (count == 3){
+            editor.putInt("count",0).apply();
+            AlertDialog.Builder builder = new AlertDialog.Builder(this)
+                    .setTitle(R.string.rate_this_app)
+                    .setMessage(R.string.remind_message)
+                    .setPositiveButton(R.string.rate_it_now, (dialogInterface, i) -> {
+                        final String appPackageName = getPackageName();
+                        try {
+                            startActivity(new Intent(Intent.ACTION_VIEW, Uri.parse("market://details?id=" + appPackageName)));
+                        } catch (android.content.ActivityNotFoundException e) {
+                            startActivity(new Intent(Intent.ACTION_VIEW, Uri.parse("https://play.google.com/store/apps/details?id=" + appPackageName)));
+                        }
+                        editor.putInt("count", -1).apply();
+                    })
+                    .setNegativeButton(R.string.no_thanks, (dialogInterface, i) -> {
+                        editor.putInt("count", -1).apply();
+                    })
+                    .setNeutralButton(R.string.remind_me_later, (dialogInterface, i) -> {
+                        dialogInterface.cancel();
+                    });
+            builder.create().show();
+        }
+        else
+            editor.putInt("count", count+1).apply();
+
+    }
+
+    private boolean checkWritePermission(){
+        return ContextCompat.checkSelfPermission(this, Manifest.permission.WRITE_EXTERNAL_STORAGE)
+                != PackageManager.PERMISSION_GRANTED;
     }
 
     private class ImageButtonTouch implements View.OnTouchListener{
